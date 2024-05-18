@@ -1,7 +1,8 @@
 #!/bin/bash
 
-SCRIPT_REPO="https://aomedia.googlesource.com/aom"
-SCRIPT_COMMIT="5ccdc66ab6eb8eb300eda854fab4ff250b2c2f92"
+SCRIPT_REPO="https://github.com/Clybius/aom-av1-lavish.git"
+SCRIPT_COMMIT="83500ccf39c98e4688acda163f87c12d8b1a854a"
+SCRIPT_BRANCH="Endless_Merging"
 
 ffbuild_enabled() {
     [[ $TARGET == winarm64 ]] && return -1
