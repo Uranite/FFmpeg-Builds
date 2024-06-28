@@ -108,7 +108,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [win64]
+        target: [win64,linux64]
     steps:
       - name: Free Disk-Space
         run: df -h && sudo apt-get clean && docker system prune -a -f && sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc && df -h
@@ -163,7 +163,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [win64]
+        target: [win64,linux64]
         variant: [gpl 7.0,gpl-shared 7.0]
     steps:
       - name: Free Disk-Space
@@ -228,7 +228,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [win64]
+        target: [win64,linux64]
         variant: [gpl 7.0,gpl-shared 7.0]
     steps:
       - name: Free Disk-Space
