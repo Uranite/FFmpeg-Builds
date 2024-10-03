@@ -1,0 +1,64 @@
+diff --git a/libavcodec/libsvtav1.c b/libavcodec/libsvtav1.c
+index 66486591f2..a2d91c9d64 100644
+--- a/libavcodec/libsvtav1.c
++++ b/libavcodec/libsvtav1.c
+@@ -73,7 +73,7 @@ typedef struct SvtContext {
+     int tile_rows;
+ #endif
+     int enc_mode;
+-    int crf;
++    float crf;
+     int qp;
+ } SvtContext;
+ 
+@@ -146,6 +146,7 @@ static int alloc_buffer(EbSvtAv1EncConfiguration *config, SvtContext *svt_enc)
+ 
+ }
+ 
++#define MAX_QP_VALUE 63
+ static int config_enc_params(EbSvtAv1EncConfiguration *param,
+                              AVCodecContext *avctx)
+ {
+@@ -170,7 +171,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
+         param->look_ahead_distance    = svt_enc->la_depth;
+ #endif
+ 
+-    if (svt_enc->enc_mode >= -1)
++    if (svt_enc->enc_mode >= -3)
+         param->enc_mode             = svt_enc->enc_mode;
+ 
+     if (avctx->bit_rate) {
+@@ -190,8 +191,12 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
+             FFMAX(avctx->bit_rate, avctx->rc_max_rate);
+ 
+     if (svt_enc->crf > 0) {
+-        param->qp                   = svt_enc->crf;
++        param->qp                   = FFMIN(MAX_QP_VALUE, (uint32_t)svt_enc->crf);
+         param->rate_control_mode    = 0;
++
++        // Calculate the quarter-step offset
++        uint32_t extended_q_index   = (uint32_t)(svt_enc->crf * 4);
++        param->extended_crf_qindex_offset = extended_q_index - param->qp * 4;
+     } else if (svt_enc->qp > 0) {
+         param->qp                   = svt_enc->qp;
+         param->rate_control_mode    = 0;
+@@ -630,7 +635,7 @@ static const AVOption options[] = {
+         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
+ #endif
+     { "preset", "Encoding preset",
+-      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -2 }, -2, MAX_ENC_PRESET, VE },
++      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -4 }, -4, MAX_ENC_PRESET, VE },
+ 
+     FF_AV1_PROFILE_OPTS
+ 
+@@ -662,8 +667,8 @@ static const AVOption options[] = {
+         { LEVEL("7.3", 73) },
+ #undef LEVEL
+ 
+-    { "crf", "Constant Rate Factor value", OFFSET(crf),
+-      AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
++    { "crf", "Constant Rate Factor value (can use quarter-step increments)",
++      OFFSET(crf), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, 70, VE },
+     { "qp", "Initial Quantizer level value", OFFSET(qp),
+       AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
+ #if FF_API_SVTAV1_OPTS
