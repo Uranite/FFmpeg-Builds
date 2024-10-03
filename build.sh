@@ -35,6 +35,21 @@ cat <<EOF >"$BUILD_SCRIPT"
     git clone --filter=blob:none --branch='$GIT_BRANCH' '$FFMPEG_REPO' ffmpeg
     cd ffmpeg
 
+    # Extract the version from GIT_BRANCH
+    BRANCH_VERSION=\$(echo '$GIT_BRANCH' | grep -oP 'release/\K\d+\.\d+' || echo 'master')
+
+    if [ -d "/patches/ffmpeg/\$BRANCH_VERSION" ]; then
+        for patch in /patches/ffmpeg/\$BRANCH_VERSION/*.patch; do
+            [ -f "\$patch" ] || continue
+            git apply "\$patch"
+        done
+    elif [ -d "/patches/ffmpeg" ]; then
+        for patch in /patches/ffmpeg/*.patch; do
+            [ -f "\$patch" ] || continue
+            git apply "\$patch"
+        done
+    fi
+
     ./configure --prefix=/ffbuild/prefix --pkg-config-flags="--static" \$FFBUILD_TARGET_FLAGS \$FF_CONFIGURE \
         --extra-cflags="\$FF_CFLAGS" --extra-cxxflags="\$FF_CXXFLAGS" --extra-libs="\$FF_LIBS" \
         --extra-ldflags="\$FF_LDFLAGS" --extra-ldexeflags="\$FF_LDEXEFLAGS" \
@@ -46,7 +61,12 @@ EOF
 
 [[ -t 1 ]] && TTY_ARG="-t" || TTY_ARG=""
 
-docker run --rm -i $TTY_ARG "${UIDARGS[@]}" -v "$PWD/ffbuild":/ffbuild -v "$BUILD_SCRIPT":/build.sh "$IMAGE" bash /build.sh
+PATCHES_MOUNT=""
+if [ -d "patches/ffmpeg" ]; then
+    PATCHES_MOUNT="-v $PWD/patches:/patches"
+fi
+
+docker run --rm -i $TTY_ARG "${UIDARGS[@]}" -v "$PWD/ffbuild":/ffbuild $PATCHES_MOUNT -v "$BUILD_SCRIPT":/build.sh "$IMAGE" bash /build.sh
 
 mkdir -p artifacts
 ARTIFACTS_PATH="$PWD/artifacts"
