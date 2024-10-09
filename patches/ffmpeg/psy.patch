@@ -1,10 +1,10 @@
 diff --git a/libavcodec/libsvtav1.c b/libavcodec/libsvtav1.c
-index 79b28eb..8996152 100644
+index 0f9d455660..5b751a215b 100644
 --- a/libavcodec/libsvtav1.c
 +++ b/libavcodec/libsvtav1.c
-@@ -69,7 +69,8 @@ typedef struct SvtContext {
-     // User options.
-     AVDictionary *svtav1_opts;
+@@ -73,7 +73,8 @@ typedef struct SvtContext {
+     int tile_rows;
+ #endif
      int enc_mode;
 -    int crf;
 +    float crf;
@@ -12,29 +12,20 @@ index 79b28eb..8996152 100644
      int qp;
  } SvtContext;
  
-@@ -205,6 +206,7 @@ static void handle_side_data(AVCodecContext *avctx,
-     }
- }
+@@ -165,7 +166,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
+         param->look_ahead_distance  = svt_enc->la_depth;
+ #endif
  
-+#define MAX_QP_VALUE 63
- static int config_enc_params(EbSvtAv1EncConfiguration *param,
-                              AVCodecContext *avctx)
- {
-@@ -213,7 +215,7 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
-     const AVDictionaryEntry av_unused *en = NULL;
- 
-     // Update param from options
--    if (svt_enc->enc_mode >= -1)
+-    if (svt_enc->enc_mode >= 0)
 +    if (svt_enc->enc_mode >= -3)
          param->enc_mode             = svt_enc->enc_mode;
  
      if (avctx->bit_rate) {
-@@ -233,8 +235,17 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
+@@ -185,7 +186,16 @@ static int config_enc_params(EbSvtAv1EncConfiguration *param,
              FFMAX(avctx->bit_rate, avctx->rc_max_rate);
  
      if (svt_enc->crf > 0) {
 -        param->qp                   = svt_enc->crf;
--        param->rate_control_mode    = 0;
 +        float crf_value;
 +        uint32_t extended_q_index;
 +
@@ -45,20 +36,19 @@ index 79b28eb..8996152 100644
 +        extended_q_index = (uint32_t)(crf_value * 4);
 +        param->extended_crf_qindex_offset = extended_q_index - param->qp * 4;
 +
-+        param->rate_control_mode = 0;
+         param->rate_control_mode    = 0;
      } else if (svt_enc->qp > 0) {
          param->qp                   = svt_enc->qp;
-         param->rate_control_mode    = 0;
-@@ -694,7 +705,7 @@ static av_cold int eb_enc_close(AVCodecContext *avctx)
- #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
- static const AVOption options[] = {
+@@ -588,7 +598,7 @@ static const AVOption options[] = {
+         { "high", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, VE, "tier" },
+ #endif
      { "preset", "Encoding preset",
--      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -2 }, -2, MAX_ENC_PRESET, VE },
-+      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = 10 }, -3, MAX_ENC_PRESET, VE },
+-      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, MAX_ENC_PRESET, VE },
++      OFFSET(enc_mode), AV_OPT_TYPE_INT, { .i64 = -4 }, -4, MAX_ENC_PRESET, VE },
  
      FF_AV1_PROFILE_OPTS
  
-@@ -726,8 +737,8 @@ static const AVOption options[] = {
+@@ -620,8 +630,8 @@ static const AVOption options[] = {
          { LEVEL("7.3", 73) },
  #undef LEVEL
  
@@ -68,4 +58,4 @@ index 79b28eb..8996152 100644
 +      OFFSET(crf), AV_OPT_TYPE_FLOAT, { .dbl = 0 }, 0, 70, VE },
      { "qp", "Initial Quantizer level value", OFFSET(qp),
        AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 63, VE },
-     { "svtav1-params", "Set the SVT-AV1 configuration using a :-separated list of key=value parameters", OFFSET(svtav1_opts), AV_OPT_TYPE_DICT, { 0 }, 0, 0, VE },
+ #if FF_API_SVTAV1_OPTS
