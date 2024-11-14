@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SCRIPT_REPO="https://github.com/gianni-rosato/svt-av1-psy.git"
-SCRIPT_COMMIT="916cabd50bbaba3728def160f0b8aa9cb418aa5c"
+SCRIPT_COMMIT="e118ea8c74c2d89cbdc0868c038922036e71d52f"
 
 ffbuild_enabled() {
     [[ $TARGET == win32 ]] && return -1
