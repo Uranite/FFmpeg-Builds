@@ -38,6 +38,13 @@ cat <<EOF >"$BUILD_SCRIPT"
     # Extract the version from GIT_BRANCH
     BRANCH_VERSION=\$(echo '$GIT_BRANCH' | grep -oP 'release/\K\d+\.\d+' || echo 'master')
 
+    # woooooo xpsnr
+    if [ "$GIT_BRANCH" = "7.0.2" ]; then
+        git clone https://github.com/fraunhoferhhi/xpsnr
+        cp xpsnr/libavfilter/* ffmpeg/libavfilter/
+        rm -rf xpsnr
+    fi
+
     if [ -d "/patches/ffmpeg/\$BRANCH_VERSION" ]; then
         for patch in /patches/ffmpeg/\$BRANCH_VERSION/*.patch; do
             [ -f "\$patch" ] || continue
